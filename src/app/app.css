@@ -1,0 +1,47 @@
+.hero-section {
+  background: linear-gradient(135deg, #141414, #343434);
+  color: white;
+  padding: 80px 20px;
+}
+
+.hero-section h1 {
+  font-size: 42px;
+  font-weight: bold;
+}
+
+.hero-section p {
+  font-size: 18px;
+  color: #ddd;
+}
+
+.movie-poster {
+  height: 220px;
+  background: linear-gradient(135deg, #252525, #555);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 15px;
+}
+
+.movie-poster h3 {
+  font-weight: bold;
+}
+
+.card {
+  border: none;
+  transition: transform 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+}
+
+.card-body p {
+  font-size: 14px;
+}
+
+footer {
+  margin-top: 50px;
+}
