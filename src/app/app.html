@@ -1,15 +1,14 @@
-
+```html
 <!-- Navigation Bar -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+<nav class="navbar navbar-dark bg-dark">
   <div class="container">
     <a class="navbar-brand fw-bold" href="#">
       <span class="text-danger">Movie</span>Booking
     </a>
 
-    <div class="navbar-nav ms-auto">
-      <a class="nav-link active" href="#">Home</a>
-      <a class="nav-link" href="#movies">Movies</a>
-    </div>
+    <a class="nav-link text-white" href="#movies">
+      Movies
+    </a>
   </div>
 </nav>
 
@@ -18,21 +17,28 @@
   <div class="container">
     <h1>Welcome to Movie Booking</h1>
     <p>Book your favourite movie tickets online!</p>
-    <a href="#movies" class="btn btn-danger btn-lg">
-      Explore Movies
-    </a>
   </div>
 </section>
 
 <!-- Movies Section -->
-<div class="container my-5" id="movies">
+<section class="container my-5" id="movies">
+<h2 class="fw-bold mb-4">
+  Available Shows - {{ selectedMovieTitle }}
+</h2>
 
-  <h2 class="fw-bold mb-4">Now Showing</h2>
+<p>Loading status: {{ isLoadingShows }}</p>
+
+<p>Number of shows: {{ shows.length }}</p>
+  @if (errorMessage) {
+    <div class="alert alert-danger">
+      {{ errorMessage }}
+    </div>
+  }
 
   <div class="row g-4">
 
-    @for (movie of movies; track movie.title) {
-      <div class="col-md-3">
+    @for (movie of movies; track movie.movieId) {
+      <div class="col-md-4 col-lg-3">
 
         <div class="card shadow h-100">
 
@@ -41,28 +47,195 @@
           </div>
 
           <div class="card-body">
-            <h5 class="card-title">{{ movie.title }}</h5>
 
-            <p class="text-muted mb-1">
+            <h5 class="fw-bold">{{ movie.title }}</h5>
+
+            <p>{{ movie.description }}</p>
+
+            <p class="text-muted">
               Genre: {{ movie.genre }}
             </p>
 
             <p class="text-muted">
-              Duration: {{ movie.durationMinutes }} mins
+              Language: {{ movie.language }}
             </p>
 
-            <button class="btn btn-danger w-100">
+            <p class="text-muted">
+              Duration: {{ movie.durationMinutes }} minutes
+            </p>
+
+            <p class="text-muted">
+              Release Date:
+              {{ movie.releaseDate | date:'dd-MM-yyyy' }}
+            </p>
+
+            <button
+              class="btn btn-danger w-100"
+              (click)="loadShows(movie.movieId, movie.title)">
               Book Tickets
             </button>
-          </div>
 
+          </div>
         </div>
+      </div>
+
+    } @empty {
+      @if (!isLoading && !errorMessage) {
+        <p>No movies found.</p>
+      }
+    }
+
+  </div>
+</section>
+
+<!-- Shows Section -->
+@if (selectedMovieId !== null) {
+
+  <section class="container my-5" id="shows">
+
+    <h2 class="fw-bold mb-4">
+      Available Shows - {{ selectedMovieTitle }}
+    </h2>
+
+    @if (isLoadingShows) {
+      <p>Loading shows...</p>
+    }
+
+    @if (showError) {
+      <div class="alert alert-danger">
+        {{ showError }}
+      </div>
+    }
+
+    @if (!isLoadingShows && !showError && shows.length === 0) {
+      <div class="alert alert-warning">
+        No shows available for this movie.
+      </div>
+    }
+
+    <div class="row g-4">
+
+      @for (show of shows; track show.showId) {
+
+        <div class="col-md-4">
+
+          <div class="card shadow h-100">
+
+            <div class="card-body">
+
+              <h5 class="fw-bold">
+                {{ show.movieTitle }}
+              </h5>
+
+              <p class="mb-2">
+                <strong>Theatre:</strong>
+                {{ show.theatreName }}
+              </p>
+
+              <p class="mb-2">
+                <strong>Screen:</strong>
+                {{ show.screenName }}
+              </p>
+
+              <p class="mb-2">
+                <strong>Start Time:</strong>
+                {{ show.startTime | date:'dd-MM-yyyy, hh:mm a' }}
+              </p>
+
+              <p class="mb-2">
+                <strong>End Time:</strong>
+                {{ show.endTime | date:'hh:mm a' }}
+              </p>
+
+              <h6 class="text-danger fw-bold mt-3">
+                Ticket Price: ₹{{ show.ticketPrice }}
+              </h6>
+
+              <button
+                class="btn btn-primary w-100"
+                (click)="loadSeats(show.showId)">
+                Select Show
+              </button>
+
+            </div>
+          </div>
+        </div>
+
+      }
+
+    </div>
+  </section>
+}
+
+<!-- Seat Selection Section -->
+@if (selectedShowId !== null) {
+
+  <section class="container my-5" id="seats">
+
+    <h2 class="fw-bold mb-4 text-center">
+      Select Your Seats
+    </h2>
+
+    @if (isLoadingSeats) {
+      <p class="text-center">Loading seats...</p>
+    }
+
+    @if (seatError) {
+      <div class="alert alert-danger">
+        {{ seatError }}
+      </div>
+    }
+
+    @if (!isLoadingSeats && seats.length > 0) {
+
+      <!-- Screen -->
+      <div class="text-center mb-5">
+        <div class="screen">
+          SCREEN
+        </div>
+      </div>
+
+      <!-- Seat Legend -->
+      <div class="d-flex justify-content-center gap-4 mb-4">
+
+        <div>
+          <span class="seat available legend-seat"></span>
+          Available
+        </div>
+
+        <div>
+          <span class="seat booked legend-seat"></span>
+          Booked
+        </div>
+
+      </div>
+
+      <!-- Seat Layout -->
+      <div class="seat-container">
+<button
+  type="button"
+  class="seat"
+  [class.available]="seat.status.toLowerCase() === 'available'"
+  [class.booked]="seat.status.toLowerCase() === 'booked'"
+  [disabled]="seat.status.toLowerCase() !== 'available'"
+  [title]="seat.seatLabel + ' - ' + seat.status"
+  (click)="toggleSeat(seat)">
+
+  {{ seat.seatLabel }}
+
+</button>
 
       </div>
     }
 
-  </div>
-</div>
+    @if (!isLoadingSeats && seats.length === 0 && !seatError) {
+      <div class="alert alert-warning text-center">
+        No seats found for this show.
+      </div>
+    }
+
+  </section>
+}
 
 <!-- Footer -->
 <footer class="bg-dark text-white text-center p-3">
