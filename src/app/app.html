@@ -1,245 +1,438 @@
-```html
-<!-- Navigation Bar -->
-<nav class="navbar navbar-dark bg-dark">
-  <div class="container">
-    <a class="navbar-brand fw-bold" href="#">
-      <span class="text-danger">Movie</span>Booking
-    </a>
-
-    <a class="nav-link text-white" href="#movies">
-      Movies
-    </a>
-  </div>
-</nav>
-
-<!-- Hero Section -->
-<section class="hero-section text-center">
-  <div class="container">
-    <h1>Welcome to Movie Booking</h1>
-    <p>Book your favourite movie tickets online!</p>
-  </div>
-</section>
-
-<!-- Movies Section -->
-<section class="container my-5" id="movies">
-<h2 class="fw-bold mb-4">
-  Available Shows - {{ selectedMovieTitle }}
-</h2>
-
-<p>Loading status: {{ isLoadingShows }}</p>
-
-<p>Number of shows: {{ shows.length }}</p>
-  @if (errorMessage) {
-    <div class="alert alert-danger">
-      {{ errorMessage }}
+<div id="top" class="app-shell">
+  <header class="site-header">
+    <div class="container header-content">
+      <a class="brand" href="#top" aria-label="CineBook home">
+        <span class="brand-mark">C</span>
+        <span>CINE<span class="brand-accent">BOOK</span></span>
+      </a>
+      <nav class="header-nav" aria-label="Main navigation">
+        <a href="#movies">Movies</a>
+        @if (authService.session; as session) {
+          <span class="account-name">Hi, {{ session.name }}</span>
+          <button class="text-button" type="button" (click)="signOut()">Sign out</button>
+        } @else {
+          <button class="text-button" type="button" (click)="openAuth()">Sign in</button>
+        }
+      </nav>
     </div>
-  }
+  </header>
 
-  <div class="row g-4">
+  <main>
+    <section class="hero">
+      <div class="container hero-content">
+        <p class="eyebrow">YOUR NEXT GREAT NIGHT OUT</p>
+        <h1>Big stories.<br /><span>Better seats.</span></h1>
+        <p class="hero-copy">Find a film, pick your seats, and make it a night to remember.</p>
+        <a class="primary-button" href="#movies"
+          >Explore movies <span aria-hidden="true">↓</span></a
+        >
+      </div>
+      <div class="hero-orbit orbit-one"></div>
+      <div class="hero-orbit orbit-two"></div>
+    </section>
 
-    @for (movie of movies; track movie.movieId) {
-      <div class="col-md-4 col-lg-3">
+    <section class="section container" id="movies">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">NOW SHOWING</p>
+          <h2>Find your movie</h2>
+        </div>
+        <label class="search-box">
+          <span class="visually-hidden">Search movies</span>
+          <span aria-hidden="true">⌕</span>
+          <input
+            type="search"
+            placeholder="Search title, genre or language"
+            [(ngModel)]="movieSearch"
+          />
+        </label>
+      </div>
 
-        <div class="card shadow h-100">
+      @if (movieError) {
+        <div class="notice notice-error" role="alert">
+          {{ movieError }}
+          <button type="button" (click)="loadMovies()">Try again</button>
+        </div>
+      }
 
-          <div class="movie-poster">
-            <h3>{{ movie.title }}</h3>
+      @if (isLoadingMovies) {
+        <div class="loading-state">
+          <span class="spinner"></span> Loading movies from the cinema...
+        </div>
+      } @else if (!movieError && filteredMovies.length === 0) {
+        <div class="empty-state">
+          <span aria-hidden="true">▧</span>
+          <h3>
+            {{ movies.length ? 'No movies match your search' : 'No movies available right now' }}
+          </h3>
+          <p>
+            {{
+              movies.length ? 'Try another title, genre or language.' : 'Please check back soon.'
+            }}
+          </p>
+        </div>
+      } @else {
+        <div class="movie-grid">
+          @for (movie of filteredMovies; track movie.movieId; let index = $index) {
+            <article
+              class="movie-card"
+              [class.movie-card-active]="selectedMovieId === movie.movieId"
+            >
+              <div class="poster" [class]="'poster poster-' + (index % 5)">
+                <span class="poster-tag">{{ movie.language }}</span>
+                <span class="poster-title">{{ movie.title }}</span>
+                <span class="poster-duration">{{ movie.durationMinutes }} min</span>
+              </div>
+              <div class="movie-info">
+                <div class="movie-title-line">
+                  <h3>{{ movie.title }}</h3>
+                  <span class="movie-rating" aria-label="Movie genre">{{ movie.genre }}</span>
+                </div>
+                <p class="movie-description">
+                  {{ movie.description || 'A great film is waiting to be discovered.' }}
+                </p>
+                <div class="movie-meta">
+                  <span>{{ movie.language }}</span>
+                  <span>{{ movie.releaseDate | date: 'MMM d, y' }}</span>
+                </div>
+                <button class="card-button" type="button" (click)="loadShows(movie)">
+                  {{ selectedMovieId === movie.movieId ? 'View showtimes' : 'Book tickets' }}
+                  <span aria-hidden="true">→</span>
+                </button>
+              </div>
+            </article>
+          }
+        </div>
+      }
+    </section>
+
+    @if (selectedMovieId !== null) {
+      <section class="section section-muted" id="shows">
+        <div class="container">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">MAKE IT A MOVIE NIGHT</p>
+              <h2>
+                Showtimes <span class="heading-subtitle">for {{ selectedMovieTitle }}</span>
+              </h2>
+            </div>
+            <button
+              type="button"
+              class="subtle-button"
+              (click)="
+                selectedMovieId = null; selectedShowId = null; seats = []; selectedSeats = []
+              "
+            >
+              Browse all movies
+            </button>
           </div>
 
-          <div class="card-body">
+          @if (isLoadingShows) {
+            <div class="loading-state"><span class="spinner"></span> Finding showtimes...</div>
+          } @else if (showError) {
+            <div class="notice notice-error" role="alert">
+              {{ showError }}
+              <button type="button" (click)="reloadShows()">Try again</button>
+            </div>
+          } @else if (shows.length === 0) {
+            <div class="empty-state compact">
+              <h3>No showtimes found</h3>
+              <p>There are no upcoming shows for this movie.</p>
+            </div>
+          } @else {
+            <div class="show-grid">
+              @for (show of shows; track show.showId) {
+                <article
+                  class="show-card"
+                  [class.show-card-active]="selectedShowId === show.showId"
+                >
+                  <div class="show-time">
+                    <span class="show-date">{{ show.startTime | date: 'EEE, MMM d' }}</span>
+                    <strong>{{ show.startTime | date: 'h:mm a' }}</strong>
+                    <span class="show-end">Ends {{ show.endTime | date: 'h:mm a' }}</span>
+                  </div>
+                  <div class="show-details">
+                    <h3>{{ show.theatreName }}</h3>
+                    <p>{{ show.screenName }}</p>
+                    <span class="ticket-price">₹{{ show.ticketPrice }} <small>/ seat</small></span>
+                  </div>
+                  <button class="show-button" type="button" (click)="loadSeats(show)">
+                    {{ selectedShowId === show.showId ? 'Selected' : 'Choose seats' }}
+                  </button>
+                </article>
+              }
+            </div>
+          }
+        </div>
+      </section>
+    }
 
-            <h5 class="fw-bold">{{ movie.title }}</h5>
-
-            <p>{{ movie.description }}</p>
-
-            <p class="text-muted">
-              Genre: {{ movie.genre }}
-            </p>
-
-            <p class="text-muted">
-              Language: {{ movie.language }}
-            </p>
-
-            <p class="text-muted">
-              Duration: {{ movie.durationMinutes }} minutes
-            </p>
-
-            <p class="text-muted">
-              Release Date:
-              {{ movie.releaseDate | date:'dd-MM-yyyy' }}
-            </p>
-
-            <button
-              class="btn btn-danger w-100"
-              (click)="loadShows(movie.movieId, movie.title)">
-              Book Tickets
-            </button>
-
+    @if (selectedShowId !== null) {
+      <section class="section container" id="seats">
+        <div class="section-heading seat-heading">
+          <div>
+            <p class="eyebrow">YOUR SEATS, YOUR WAY</p>
+            <h2>Choose your seats</h2>
+            @if (selectedShow; as show) {
+              <p class="section-description">
+                {{ show.theatreName }} · {{ show.screenName }} ·
+                {{ show.startTime | date: 'EEE, MMM d · h:mm a' }}
+              </p>
+            }
+          </div>
+          <div class="seat-legend" aria-label="Seat availability">
+            <span><i class="legend-dot available-dot"></i> Available</span>
+            <span><i class="legend-dot selected-dot"></i> Selected</span>
+            <span><i class="legend-dot booked-dot"></i> Booked</span>
           </div>
         </div>
-      </div>
 
-    } @empty {
-      @if (!isLoading && !errorMessage) {
-        <p>No movies found.</p>
-      }
+        @if (isLoadingSeats) {
+          <div class="loading-state"><span class="spinner"></span> Loading the seat map...</div>
+        } @else if (seatError) {
+          <div class="notice notice-error" role="alert">
+            {{ seatError }}
+            @if (selectedShow; as show) {
+              <button type="button" (click)="loadSeats(show)">Try again</button>
+            }
+          </div>
+        } @else if (seats.length === 0) {
+          <div class="empty-state compact"><h3>No seats found for this show</h3></div>
+        } @else {
+          <div class="cinema-layout">
+            <div class="screen-wrap"><div class="screen">SCREEN</div></div>
+            <div class="seat-map" aria-label="Seat map">
+              @for (row of seatRows; track row.name) {
+                <div class="seat-row">
+                  <span class="row-label">{{ row.name }}</span>
+                  @for (seat of row.seats; track seat.seatId) {
+                    <button
+                      type="button"
+                      class="seat"
+                      [class.seat-selected]="isSeatSelected(seat.seatId)"
+                      [class.seat-booked]="!isSeatAvailable(seat)"
+                      [disabled]="!isSeatAvailable(seat)"
+                      [attr.aria-pressed]="isSeatSelected(seat.seatId)"
+                      [attr.aria-label]="'Seat ' + seat.seatLabel + ', ' + seat.status"
+                      [title]="seat.seatLabel + ' · ₹' + seat.price"
+                      (click)="toggleSeat(seat)"
+                    >
+                      {{ seat.seatNumber }}
+                    </button>
+                  }
+                  <span class="row-label">{{ row.name }}</span>
+                </div>
+              }
+            </div>
+            <p class="screen-caption">All eyes this way</p>
+          </div>
+        }
+        @if (bookingError && selectedSeats.length === 0) {
+          <div class="notice notice-error" role="alert">{{ bookingError }}</div>
+        }
+      </section>
     }
 
-  </div>
-</section>
-
-<!-- Shows Section -->
-@if (selectedMovieId !== null) {
-
-  <section class="container my-5" id="shows">
-
-    <h2 class="fw-bold mb-4">
-      Available Shows - {{ selectedMovieTitle }}
-    </h2>
-
-    @if (isLoadingShows) {
-      <p>Loading shows...</p>
-    }
-
-    @if (showError) {
-      <div class="alert alert-danger">
-        {{ showError }}
-      </div>
-    }
-
-    @if (!isLoadingShows && !showError && shows.length === 0) {
-      <div class="alert alert-warning">
-        No shows available for this movie.
-      </div>
-    }
-
-    <div class="row g-4">
-
-      @for (show of shows; track show.showId) {
-
-        <div class="col-md-4">
-
-          <div class="card shadow h-100">
-
-            <div class="card-body">
-
-              <h5 class="fw-bold">
-                {{ show.movieTitle }}
-              </h5>
-
-              <p class="mb-2">
-                <strong>Theatre:</strong>
-                {{ show.theatreName }}
-              </p>
-
-              <p class="mb-2">
-                <strong>Screen:</strong>
-                {{ show.screenName }}
-              </p>
-
-              <p class="mb-2">
-                <strong>Start Time:</strong>
-                {{ show.startTime | date:'dd-MM-yyyy, hh:mm a' }}
-              </p>
-
-              <p class="mb-2">
-                <strong>End Time:</strong>
-                {{ show.endTime | date:'hh:mm a' }}
-              </p>
-
-              <h6 class="text-danger fw-bold mt-3">
-                Ticket Price: ₹{{ show.ticketPrice }}
-              </h6>
-
-              <button
-                class="btn btn-primary w-100"
-                (click)="loadSeats(show.showId)">
-                Select Show
+    @if (selectedSeats.length > 0 && selectedShow) {
+      <section class="section container summary-section" id="booking-summary">
+        <div class="booking-summary">
+          <div class="summary-main">
+            <p class="eyebrow">ALMOST THERE</p>
+            <h2>Your booking</h2>
+            <p>{{ selectedShow.movieTitle }} · {{ selectedShow.theatreName }}</p>
+            <div class="selected-seat-list">
+              @for (seat of selectedSeats; track seat.seatId) {
+                <span>{{ seat.seatLabel }}</span>
+              }
+              <button type="button" class="clear-button" (click)="clearSeatSelection()">
+                Clear
               </button>
+            </div>
+            <label class="field-label" for="customer-phone">Contact phone</label>
+            <input
+              id="customer-phone"
+              class="form-control booking-phone"
+              type="tel"
+              name="customerPhone"
+              [(ngModel)]="customerPhone"
+              required
+              maxlength="15"
+              placeholder="Your phone number"
+            />
+          </div>
+          <div class="summary-total">
+            <div class="total-line">
+              <span>Tickets</span><strong>{{ totalSeats }}</strong>
+            </div>
+            <div class="total-line">
+              <span>Price per seat</span><strong>₹{{ selectedShow.ticketPrice }}</strong>
+            </div>
+            <div class="total-line final-total">
+              <span>Total</span><strong>₹{{ totalAmount }}</strong>
+            </div>
+            @if (bookingError) {
+              <p class="booking-error" role="alert">{{ bookingError }}</p>
+            }
+            @if (!authService.session) {
+              <p class="signin-hint">Sign in is required to complete your booking.</p>
+            }
+            <button
+              class="primary-button confirm-button"
+              type="button"
+              [disabled]="isBooking"
+              (click)="confirmBooking()"
+            >
+              @if (isBooking) {
+                Confirming...
+              } @else {
+                Confirm booking · ₹{{ totalAmount }}
+              }
+            </button>
+          </div>
+        </div>
+      </section>
+    }
 
+    @if (booking) {
+      <section class="section container" id="booking-confirmation">
+        <div class="confirmation-card">
+          <span class="confirmation-icon" aria-hidden="true">✓</span>
+          <p class="eyebrow">YOU'RE ALL SET</p>
+          <h2>Booking confirmed</h2>
+          <p class="confirmation-copy">
+            Your tickets are booked. We look forward to seeing you at the movies.
+          </p>
+          <div class="confirmation-details">
+            <div>
+              <span>Booking reference</span><strong>{{ booking.bookingReference }}</strong>
+            </div>
+            <div>
+              <span>Movie</span><strong>{{ booking.movieTitle }}</strong>
+            </div>
+            <div>
+              <span>Showtime</span
+              ><strong>{{ booking.showStartTime | date: 'EEE, MMM d · h:mm a' }}</strong>
+            </div>
+            <div>
+              <span>Seats</span><strong>{{ booking.seats.join(', ') }}</strong>
+            </div>
+            <div>
+              <span>Total paid</span><strong>₹{{ booking.totalAmount }}</strong>
             </div>
           </div>
         </div>
+      </section>
+    }
 
-      }
+    @if (showAuthForm) {
+      <div class="auth-backdrop" role="presentation" (click)="showAuthForm = false">
+        <section
+          class="auth-card"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="auth-title"
+          (click)="$event.stopPropagation()"
+        >
+          <button
+            class="auth-close"
+            type="button"
+            aria-label="Close"
+            (click)="showAuthForm = false"
+          >
+            ×
+          </button>
+          <p class="eyebrow">WELCOME TO CINEBOOK</p>
+          <h2 id="auth-title">{{ authMode === 'login' ? 'Sign in' : 'Create your account' }}</h2>
+          <p class="auth-intro">
+            {{
+              authMode === 'login'
+                ? 'Sign in to confirm your tickets.'
+                : 'A few details and you are ready to book.'
+            }}
+          </p>
+          @if (authError) {
+            <div class="notice notice-error" role="alert">{{ authError }}</div>
+          }
+          <form (ngSubmit)="submitAuth()">
+            @if (authMode === 'register') {
+              <label class="field-label" for="auth-name">Full name</label>
+              <input
+                id="auth-name"
+                class="form-control auth-input"
+                name="name"
+                [(ngModel)]="authForm.name"
+                required
+                maxlength="100"
+                autocomplete="name"
+              />
+            }
+            <label class="field-label" for="auth-email">Email address</label>
+            <input
+              id="auth-email"
+              class="form-control auth-input"
+              type="email"
+              name="email"
+              [(ngModel)]="authForm.email"
+              required
+              maxlength="150"
+              autocomplete="email"
+            />
+            @if (authMode === 'register') {
+              <label class="field-label" for="auth-phone">Phone number</label>
+              <input
+                id="auth-phone"
+                class="form-control auth-input"
+                type="tel"
+                name="phone"
+                [(ngModel)]="authForm.phone"
+                required
+                maxlength="15"
+                autocomplete="tel"
+              />
+            }
+            <label class="field-label" for="auth-password">Password</label>
+            <input
+              id="auth-password"
+              class="form-control auth-input"
+              type="password"
+              name="password"
+              [(ngModel)]="authForm.password"
+              required
+              [minlength]="authMode === 'register' ? 6 : 1"
+              autocomplete="{{ authMode === 'login' ? 'current-password' : 'new-password' }}"
+            />
+            <button class="primary-button auth-submit" type="submit" [disabled]="isAuthenticating">
+              {{
+                isAuthenticating
+                  ? 'Please wait...'
+                  : authMode === 'login'
+                    ? 'Sign in'
+                    : 'Create account'
+              }}
+            </button>
+          </form>
+          <p class="auth-switch">
+            {{ authMode === 'login' ? 'New to CineBook?' : 'Already have an account?' }}
+            <button
+              type="button"
+              (click)="authMode = authMode === 'login' ? 'register' : 'login'; authError = ''"
+            >
+              {{ authMode === 'login' ? 'Create account' : 'Sign in' }}
+            </button>
+          </p>
+        </section>
+      </div>
+    }
+  </main>
 
+  <footer class="site-footer">
+    <div class="container footer-content">
+      <a class="brand" href="#top"
+        ><span class="brand-mark">C</span><span>CINE<span class="brand-accent">BOOK</span></span></a
+      >
+      <p>Stories are better on the big screen.</p>
+      <span>© 2026 CineBook</span>
     </div>
-  </section>
-}
-
-<!-- Seat Selection Section -->
-@if (selectedShowId !== null) {
-
-  <section class="container my-5" id="seats">
-
-    <h2 class="fw-bold mb-4 text-center">
-      Select Your Seats
-    </h2>
-
-    @if (isLoadingSeats) {
-      <p class="text-center">Loading seats...</p>
-    }
-
-    @if (seatError) {
-      <div class="alert alert-danger">
-        {{ seatError }}
-      </div>
-    }
-
-    @if (!isLoadingSeats && seats.length > 0) {
-
-      <!-- Screen -->
-      <div class="text-center mb-5">
-        <div class="screen">
-          SCREEN
-        </div>
-      </div>
-
-      <!-- Seat Legend -->
-      <div class="d-flex justify-content-center gap-4 mb-4">
-
-        <div>
-          <span class="seat available legend-seat"></span>
-          Available
-        </div>
-
-        <div>
-          <span class="seat booked legend-seat"></span>
-          Booked
-        </div>
-
-      </div>
-
-      <!-- Seat Layout -->
-      <div class="seat-container">
-<button
-  type="button"
-  class="seat"
-  [class.available]="seat.status.toLowerCase() === 'available'"
-  [class.booked]="seat.status.toLowerCase() === 'booked'"
-  [disabled]="seat.status.toLowerCase() !== 'available'"
-  [title]="seat.seatLabel + ' - ' + seat.status"
-  (click)="toggleSeat(seat)">
-
-  {{ seat.seatLabel }}
-
-</button>
-
-      </div>
-    }
-
-    @if (!isLoadingSeats && seats.length === 0 && !seatError) {
-      <div class="alert alert-warning text-center">
-        No seats found for this show.
-      </div>
-    }
-
-  </section>
-}
-
-<!-- Footer -->
-<footer class="bg-dark text-white text-center p-3">
-  Movie Booking © 2026
-</footer>
-
+  </footer>
+</div>
 <router-outlet />

@@ -1,13 +1,18 @@
+
 export interface Show {
   showId: number;
   movieId: number;
   movieTitle: string;
+
   screenId: number;
   screenName: string;
+
   theatreId: number;
   theatreName: string;
+
   startTime: string;
   endTime: string;
+
   ticketPrice: number;
 }
 

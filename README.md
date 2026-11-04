@@ -1,59 +1,28 @@
-# MovieTicketBookingUi
+# CineBook
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.2.5.
+Angular frontend for the Movie Ticket Booking API.
 
-## Development server
+## Run locally
 
-To start a local development server, run:
+1. Start the backend API on `http://localhost:5081` (its development launch profile uses this address).
+2. From this directory, run `npm install` if dependencies are not already installed.
+3. Run `npm start` and open `http://localhost:4200`.
 
-```bash
-ng serve
-```
+The API base URL is set in `src/app/services/api.ts`. The backend must allow the Angular origin through CORS.
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+## Customer booking flow
 
-## Code scaffolding
+The app loads movies, then retrieves showtimes and seat availability for the selected movie and show. Customers can register or sign in, select available seats, and submit a booking. Booking creation requires the backend JWT and uses the `POST /api/Bookings` contract; the shared HTTP interceptor adds the signed-in token. The confirmation view displays the booking reference returned by the API.
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+The frontend uses these backend endpoints:
 
-```bash
-ng generate component component-name
-```
+- `GET /api/Movies`
+- `GET /api/Shows/movie/{movieId}`
+- `GET /api/Shows/{showId}/seats`
+- `POST /api/Auth/register` and `POST /api/Auth/login`
+- `POST /api/Bookings`
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## Validate
 
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+- `npm run build`
+- `npm test -- --watch=false`
