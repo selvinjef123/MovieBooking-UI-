@@ -1,6 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterOutlet } from '@angular/router';
 import { AuthResponse } from './models/auth';
@@ -27,6 +27,7 @@ export class App implements OnInit {
   private readonly movieService = inject(MovieService);
   private readonly showService = inject(ShowService);
   private readonly bookingService = inject(BookingService);
+  private readonly changeDetector = inject(ChangeDetectorRef);
   readonly authService = inject(AuthService);
 
   movies: Movie[] = [];
@@ -115,10 +116,12 @@ export class App implements OnInit {
       next: (movies) => {
         this.movies = movies;
         this.isLoadingMovies = false;
+        this.changeDetector.markForCheck();
       },
       error: (error: unknown) => {
         this.movieError = this.errorMessage(error, 'Movies could not be loaded. Please try again.');
         this.isLoadingMovies = false;
+        this.changeDetector.markForCheck();
       },
     });
   }
@@ -139,11 +142,13 @@ export class App implements OnInit {
       next: (shows) => {
         this.shows = shows;
         this.isLoadingShows = false;
+        this.changeDetector.markForCheck();
         this.scrollTo('shows');
       },
       error: (error: unknown) => {
         this.showError = this.errorMessage(error, 'Shows could not be loaded. Please try again.');
         this.isLoadingShows = false;
+        this.changeDetector.markForCheck();
       },
     });
   }
@@ -168,11 +173,13 @@ export class App implements OnInit {
       next: (seats) => {
         this.seats = seats;
         this.isLoadingSeats = false;
+        this.changeDetector.markForCheck();
         this.scrollTo('seats');
       },
       error: (error: unknown) => {
         this.seatError = this.errorMessage(error, 'Seats could not be loaded. Please try again.');
         this.isLoadingSeats = false;
+        this.changeDetector.markForCheck();
       },
     });
   }
@@ -234,10 +241,12 @@ export class App implements OnInit {
         this.showAuthForm = false;
         this.bookingError = '';
         this.isAuthenticating = false;
+        this.changeDetector.markForCheck();
       },
       error: (error: unknown) => {
         this.authError = this.errorMessage(error, 'Unable to authenticate. Please try again.');
         this.isAuthenticating = false;
+        this.changeDetector.markForCheck();
       },
     });
   }
@@ -284,6 +293,7 @@ export class App implements OnInit {
             next: (seats) => {
               this.seats = seats;
               this.isLoadingSeats = false;
+              this.changeDetector.markForCheck();
             },
             error: (error: unknown) => {
               this.seatError = this.errorMessage(
@@ -291,6 +301,7 @@ export class App implements OnInit {
                 'Booking succeeded, but seats could not be refreshed.',
               );
               this.isLoadingSeats = false;
+              this.changeDetector.markForCheck();
             },
           });
           this.scrollTo('booking-confirmation');
@@ -298,6 +309,7 @@ export class App implements OnInit {
         error: (error: unknown) => {
           this.bookingError = this.errorMessage(error, 'Booking failed. Please try again.');
           this.isBooking = false;
+          this.changeDetector.markForCheck();
           if (error instanceof HttpErrorResponse && error.status === 409 && this.selectedShow) {
             const message = this.bookingError;
             this.loadSeats(this.selectedShow);
